@@ -55,7 +55,7 @@ Paste / 粘贴：
 function cc {
     # ===== Toast =====
     Import-Module BurntToast
-    New-BurntToastNotification -Text "Claude Code", "Input needed" -Sound Default
+    New-BurntToastNotification -Text "Claude Code", "Input needed" -Sound Default    # Text & Sound are customizable / Text 和 Sound 可自定义
     
     # ===== Twilio =====
     $AccountSid = "YOUR_ACCOUNT_SID"      # ← Replace / 替换
@@ -87,7 +87,11 @@ cc
 
 ---
 
-## Auto-Trigger in Claude Code / 自动触发配置
+## Trigger When Claude Code Needs You / 等待用户时自动触发
+
+> Configure hooks to notify you when Claude Code completes a task or needs your input.
+> 
+> 配置 hooks，在 Claude Code 完成任务或需要用户确认时自动通知。
 
 ### Option A: Hooks (Recommended / 推荐)
 
@@ -105,13 +109,25 @@ Create / 创建 `.claude/settings.json`:
     ],
     "PostToolUse": [
       {
-        "matcher": { "tool_name": "AskUserQuestion" },
+        "matcher": "AskUserQuestion",
         "hooks": [{ "type": "command", "command": "powershell -Command \"cc\"", "timeout": 10 }]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          { "type": "command", "command": "powershell -Command \"cc\"", "timeout": 10 }
+        ]
       }
     ]
   }
 }
 ```
+
+> 💡 **What triggers notification / 何时触发通知:**
+> - `Stop` - Task complete, waiting for next input / 任务完成，等待下一步
+> - `AskUserQuestion` - AI is asking you a question / AI 在问你问题
+> - `PermissionRequest` - Permission dialog, needs approval / 权限弹窗，需要批准
 
 Create / 创建 `.claude/settings.local.json` (don't commit / 不要提交 Git):
 
@@ -128,9 +144,20 @@ Create / 创建 `.claude/settings.local.json` (don't commit / 不要提交 Git):
 | Event | Trigger / 触发时机 |
 |-------|-------------------|
 | `Stop` | AI stops responding / AI 停止响应 |
+| `SubagentStop` | Subagent finishes / 子代理完成 |
+| `PreToolUse` | Before tool execution / 工具调用前 |
 | `PostToolUse` | After tool execution / 工具调用后 |
+| `PermissionRequest` | Permission dialog shown / 权限请求时 |
+| `Notification` | Notification triggered / 通知触发时 |
+| `UserPromptSubmit` | User submits prompt / 用户提交提示时 |
+| `SessionStart` | Session starts / 会话开始时 |
+| `SessionEnd` | Session ends / 会话结束时 |
 
-**Tool Names / 工具名称:** `AskUserQuestion`, `EnterPlanMode`, `ExitPlanMode`, `Bash`, `Read`, `Write`, `Edit`
+**Matcher Syntax / 匹配语法:**
+- Exact match / 精确匹配: `"Write"`
+- Multiple tools / 多工具: `"Edit|Write|MultiEdit"`
+- All tools / 所有工具: `"*"` or `""`
+- With args / 带参数: `"Bash(npm test*)"`
 
 ### Option B: CLAUDE.md (Alternative / 备选)
 
